@@ -31,7 +31,7 @@ function App() {
       {!isFullScreen && (
         <header className="flex-between" style={{ padding: '1.5rem 1.5rem 0' }}>
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Eng<span className="text-gradient">Master</span></h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: '800' }}>AI English<span className="text-gradient"> Tutor</span></h1>
             <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Daily Practice & Fluency</p>
           </div>
         </header>

@@ -28,7 +28,7 @@ export const exportToCSV = async () => {
 /**
  * Downloads a string as a file
  */
-export const downloadCSV = (csvString, filename = 'engmaster_backup.csv') => {
+export const downloadCSV = (csvString, filename = 'english_tutor_backup.csv') => {
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
 

@@ -67,8 +67,8 @@ export default function Onboarding() {
 
     return (
         <div className="card" style={{ maxWidth: '100%', marginTop: '2rem' }}>
-            <h2 className="text-gradient">Bem-vindo ao EngMaster</h2>
-            <p className="text-secondary mt-2 mb-6">Vamos personalizar sua experiência.</p>
+            <h2 className="text-gradient text-center">Bem-vindo ao Tutor de Inglês</h2>
+            <p className="text-secondary mt-2 mb-6 text-center">Vamos personalizar sua experiência.</p>
 
             {step === 1 && (
                 <div className="flex-col gap-4">

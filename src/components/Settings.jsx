@@ -143,7 +143,7 @@ export default function Settings() {
 
             {saving && <p className="text-center text-xs text-secondary mt-2">Salvando preferência...</p>}
 
-            <p className="text-center text-xs text-tertiary mt-8">EngMaster v1.0.0</p>
+            <p className="text-center text-xs text-tertiary mt-8">AI English Tutor v1.0.0</p>
         </div>
     );
 }
