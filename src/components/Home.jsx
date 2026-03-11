@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCardsToReview, getStatsForToday, getSetting, getAllCards, addDailyCards } from '../db';
-import { PlayCircle, PlusCircle, PenTool, Flame, Target, Star, Compass, Hash, Sparkles, Settings as SettingsIcon } from 'lucide-react';
+import { getCardsToReview, getStatsForToday, getSetting, getAllCards } from '../db';
+import { PlayCircle, PlusCircle, PenTool, Flame, Target, Compass, Hash, Sparkles, Rocket, CheckCircle, Settings as SettingsIcon } from 'lucide-react';
 
 export default function Home() {
     const navigate = useNavigate();
@@ -11,7 +11,7 @@ export default function Home() {
 
     const [itemsToReview, setItemsToReview] = useState([]);
     const [totalCards, setTotalCards] = useState(0);
-    const [dailyNewCards, setDailyNewCards] = useState(null);
+    const [dailyPracticeDone, setDailyPracticeDone] = useState(false);
     const [showNoKeyHint, setShowNoKeyHint] = useState(false);
 
     // Check if onboarded and load stats
@@ -31,29 +31,17 @@ export default function Home() {
                 const reviewCards = await getCardsToReview();
                 setItemsToReview(reviewCards);
 
-                // Quick trick to get total cards without loading all: Supabase provides count, 
-                // but db.js exports getAllCards for now. We can just use its length for small scale.
                 const all = await getAllCards();
                 setTotalCards(all.length);
 
-                // Try to generate daily cards
-                try {
-                    const apiKey = await getSetting('gemini_api_key', '');
-                    if (!apiKey) {
-                        setShowNoKeyHint(true);
-                    } else {
-                        const generated = await addDailyCards();
-                        if (generated && generated.length > 0) {
-                            setDailyNewCards(generated);
-                            // Refresh counts after adding new cards
-                            const updatedReview = await getCardsToReview();
-                            setItemsToReview(updatedReview);
-                            const updatedAll = await getAllCards();
-                            setTotalCards(updatedAll.length);
-                        }
-                    }
-                } catch (dailyErr) {
-                    console.error("Daily generation error:", dailyErr);
+                // Check daily practice status
+                const apiKey = await getSetting('gemini_api_key', '');
+                if (!apiKey) {
+                    setShowNoKeyHint(true);
+                } else {
+                    const today = new Date().toISOString().split('T')[0];
+                    const lastPractice = await getSetting('last_daily_practice_date', '');
+                    setDailyPracticeDone(lastPractice === today);
                 }
             } catch (error) {
                 console.error("Home loading error:", error);
@@ -80,28 +68,57 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* Daily New Cards Banner */}
-            {dailyNewCards && dailyNewCards.length > 0 && (
-                <div className="card mb-6" style={{ border: '1px solid var(--accent-light)', background: 'linear-gradient(135deg, var(--accent-light), var(--bg-secondary))' }}>
-                    <div className="flex-center gap-2 mb-3">
-                        <Sparkles size={20} color="var(--accent-primary)" />
-                        <span style={{ fontWeight: '700', color: 'var(--accent-primary)' }}>
-                            {dailyNewCards.length} novos cards adicionados hoje!
-                        </span>
+            {/* Daily Practice CTA */}
+            {!dailyPracticeDone && !showNoKeyHint && (
+                <Link
+                    to="/daily-practice"
+                    className="card mb-6"
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '1rem',
+                        padding: '1.25rem', textDecoration: 'none',
+                        background: 'linear-gradient(135deg, var(--accent-light), var(--bg-secondary))',
+                        border: '1px solid var(--accent-primary)',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                >
+                    <div style={{
+                        width: '52px', height: '52px', borderRadius: '50%',
+                        background: 'var(--accent-primary)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        <Rocket size={26} color="white" />
                     </div>
-                    <div className="flex-col gap-2">
-                        {dailyNewCards.map((card, i) => (
-                            <div key={i} style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}>
-                                <strong>{card.english}</strong>
-                                <span className="text-secondary"> — {card.translation}</span>
-                            </div>
-                        ))}
+                    <div>
+                        <h3 style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '0.15rem' }}>
+                            Vamos praticar agora! 🚀
+                        </h3>
+                        <p className="text-secondary" style={{ fontSize: '0.85rem' }}>
+                            3 novos termos em inglês esperando por você hoje
+                        </p>
                     </div>
+                    <Sparkles size={20} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+                </Link>
+            )}
+
+            {/* Daily Practice Completed Badge */}
+            {dailyPracticeDone && (
+                <div className="card mb-6 flex-center gap-2" style={{
+                    padding: '0.75rem',
+                    background: 'var(--success-light)',
+                    border: '1px solid var(--success)',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    color: 'var(--success)'
+                }}>
+                    <CheckCircle size={18} />
+                    Treino de hoje concluído ✨
                 </div>
             )}
 
             {/* Hint to configure API key */}
-            {showNoKeyHint && !dailyNewCards && (
+            {showNoKeyHint && (
                 <Link to="/settings" className="card mb-6 flex-center gap-2" style={{ border: '1px dashed var(--border-color)', textAlign: 'center', padding: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)', textDecoration: 'none' }}>
                     <SettingsIcon size={16} />
                     Configure sua chave de IA nas Configurações para receber conteúdo novo todo dia ✨

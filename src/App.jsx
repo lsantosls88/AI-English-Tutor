@@ -13,6 +13,7 @@ import Notes from './components/Notes';
 import Library from './components/Library';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
+import DailyPractice from './components/DailyPractice';
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -36,7 +37,7 @@ function App() {
   ];
 
   // Hide Top and Bottom Navigation on full screen modes
-  const isFullScreen = location.pathname === '/onboarding' || location.pathname === '/review' || location.pathname === '/extra-review' || location.pathname === '/auth';
+  const isFullScreen = location.pathname === '/onboarding' || location.pathname === '/review' || location.pathname === '/extra-review' || location.pathname === '/auth' || location.pathname === '/daily-practice';
 
   return (
     <div className="app-container">
@@ -55,6 +56,7 @@ function App() {
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+          <Route path="/daily-practice" element={<RequireAuth><DailyPractice /></RequireAuth>} />
           <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
           <Route path="/add" element={<RequireAuth><AddCard /></RequireAuth>} />
           <Route path="/review" element={<RequireAuth><Review /></RequireAuth>} />

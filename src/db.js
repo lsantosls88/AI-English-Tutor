@@ -1,5 +1,5 @@
 import { supabase } from './utils/supabase';
-import { generateDailyCards } from './utils/ai';
+import { generateDailyLesson as generateDailyLessonAI } from './utils/ai';
 
 // Helper to get the current user ID
 export const getCurrentUserId = async () => {
@@ -177,22 +177,22 @@ export const saveSetting = async (key, value) => {
     return data;
 };
 
-// --- AUTO DAILY CONTENT ---
+// --- DAILY PRACTICE ---
 
 /**
- * Checks if daily cards have already been generated today. If not, generates 3 new cards via AI.
- * Returns the newly created cards, or null if skipped/failed.
+ * Generates a daily lesson (3 new terms) via AI without saving anything.
+ * Returns the lesson data for the interactive practice screen, or null if already done today / no API key.
  */
-export const addDailyCards = async () => {
+export const generateDailyLesson = async () => {
     const user_id = await getCurrentUserId();
     if (!user_id) return null;
 
-    // Check if we already generated today
+    // Check if we already completed today's practice
     const today = new Date().toISOString().split('T')[0];
-    const lastGenDate = await getSetting('last_auto_generate_date', '');
+    const lastPracticeDate = await getSetting('last_daily_practice_date', '');
 
-    if (lastGenDate === today) {
-        return null; // Already generated today
+    if (lastPracticeDate === today) {
+        return { alreadyDone: true };
     }
 
     // Get user preferences
@@ -204,26 +204,44 @@ export const addDailyCards = async () => {
     const existingWords = allCards.map(c => c.english);
 
     // Call the AI
-    const newCards = await generateDailyCards(level, goal, existingWords);
+    const lesson = await generateDailyLessonAI(level, goal, existingWords);
+    return lesson; // null if AI not configured, or { aula_diaria: [...] }
+};
 
-    if (!newCards || newCards.length === 0) {
-        return null; // AI not configured or failed
-    }
-
-    // Save each card
+/**
+ * Saves the lesson items as cards in the database after the user completes the practice.
+ * Also marks today as done so the lesson won't regenerate.
+ * @param {Array} lessonItems - Items from aula_diaria array
+ */
+export const saveDailyLessonCards = async (lessonItems) => {
     const savedCards = [];
-    for (const card of newCards) {
+
+    for (const item of lessonItems) {
         try {
-            const saved = await addCard(card);
+            // Convert lesson format to card format
+            const exampleText = item.exemplos
+                .map(ex => ex.frase_ingles)
+                .join(' | ');
+
+            const saved = await addCard({
+                type: item.termo_ingles.includes(' ') ? 'Phrase' : 'Word',
+                english: item.termo_ingles,
+                translation: item.traducao_ptbr,
+                example: exampleText,
+                notes: item.explicacao_uso,
+                tags: ['treino-diario'],
+                difficulty: 3
+            });
             savedCards.push(saved);
         } catch (err) {
-            console.error("Error saving daily card:", err);
+            console.error("Error saving daily lesson card:", err);
         }
     }
 
     // Mark today as done
     if (savedCards.length > 0) {
-        await saveSetting('last_auto_generate_date', today);
+        const today = new Date().toISOString().split('T')[0];
+        await saveSetting('last_daily_practice_date', today);
     }
 
     return savedCards;
