@@ -35,6 +35,9 @@ export default function Auth() {
                 const { error } = await signUp({ email, password });
                 if (error) throw error;
                 setMessage('Conta criada com sucesso! Você já pode entrar.');
+                setIsLogin(true);
+                setPassword('');
+                setConfirmPassword('');
             }
         } catch (err) {
             setError(err.message || 'Ocorreu um erro.');
@@ -47,7 +50,11 @@ export default function Auth() {
         <div className="flex-col flex-center" style={{ minHeight: '80vh', padding: '1rem' }}>
             <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
                 <div className="text-center mb-8">
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: '800' }}>AI English<span className="text-gradient"> Tutor</span></h1>
+                    {isLogin ? (
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: '800' }}>AI English<span className="text-gradient"> Tutor</span></h1>
+                    ) : (
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: '800' }}>Criar<span className="text-gradient"> Conta</span></h1>
+                    )}
                     <p className="text-secondary text-sm mt-1">
                         {isLogin ? 'Faça login para acessar seus cards' : 'Crie sua conta gratuitamente'}
                     </p>
