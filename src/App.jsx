@@ -1,5 +1,6 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Home as HomeIcon, PlusCircle, BookOpen, Settings as SettingsIcon } from 'lucide-react';
+import { useAuth } from './context/AuthContext';
 import './App.css';
 
 // Import real components
@@ -11,6 +12,18 @@ import ExtraReview from './components/ExtraReview';
 import Notes from './components/Notes';
 import Library from './components/Library';
 import Settings from './components/Settings';
+import Auth from './components/Auth';
+
+function RequireAuth({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
 
 function App() {
   const location = useLocation();
@@ -22,8 +35,8 @@ function App() {
     { path: '/settings', icon: SettingsIcon, label: 'Settings' },
   ];
 
-  // Hide Top and Bottom Navigation on Onboarding or Review mode
-  const isFullScreen = location.pathname === '/onboarding' || location.pathname === '/review' || location.pathname === '/extra-review';
+  // Hide Top and Bottom Navigation on full screen modes
+  const isFullScreen = location.pathname === '/onboarding' || location.pathname === '/review' || location.pathname === '/extra-review' || location.pathname === '/auth';
 
   return (
     <div className="app-container">
@@ -40,14 +53,15 @@ function App() {
       {/* Main Content Area */}
       <main className="content-area" style={{ paddingBottom: isFullScreen ? '1.5rem' : '6rem' }}>
         <Routes>
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/add" element={<AddCard />} />
-          <Route path="/review" element={<Review />} />
-          <Route path="/extra-review" element={<ExtraReview />} />
-          <Route path="/notes" element={<Notes />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+          <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+          <Route path="/add" element={<RequireAuth><AddCard /></RequireAuth>} />
+          <Route path="/review" element={<RequireAuth><Review /></RequireAuth>} />
+          <Route path="/extra-review" element={<RequireAuth><ExtraReview /></RequireAuth>} />
+          <Route path="/notes" element={<RequireAuth><Notes /></RequireAuth>} />
+          <Route path="/library" element={<RequireAuth><Library /></RequireAuth>} />
+          <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
         </Routes>
       </main>
 

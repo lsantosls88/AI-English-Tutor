@@ -1,14 +1,27 @@
-import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { useState, useEffect } from 'react';
+import { getAllCards, deleteCard } from '../db';
 import { exportToCSV, downloadCSV, importFromCSV } from '../utils/csv';
 import { Download, Upload, Search, Trash2 } from 'lucide-react';
 
 export default function Library() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [allCards, setAllCards] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Use Dexie's live query to automatically re-render when cards change
-    const allCards = useLiveQuery(() => db.cards.toArray(), []) || [];
+    const fetchCards = async () => {
+        try {
+            const cards = await getAllCards();
+            setAllCards(cards);
+        } catch (error) {
+            console.error("Error fetching library cards:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCards();
+    }, []);
 
     const filteredCards = allCards.filter(card =>
         card.english.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -18,7 +31,8 @@ export default function Library() {
 
     const handleDelete = async (id) => {
         if (window.confirm("Certeza que deseja excluir este card?")) {
-            await db.cards.delete(id);
+            await deleteCard(id);
+            setAllCards(allCards.filter(c => c.id !== id));
         }
     };
 

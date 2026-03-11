@@ -1,10 +1,10 @@
-import { db, addCard } from '../db';
+import { getAllCards, addCard } from '../db';
 
 /**
  * Generates a CSV string from an array of cards
  */
 export const exportToCSV = async () => {
-    const cards = await db.cards.toArray();
+    const cards = await getAllCards();
 
     if (cards.length === 0) return null;
 

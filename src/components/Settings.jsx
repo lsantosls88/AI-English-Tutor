@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getSetting, saveSetting } from '../db';
-import { Moon, Sun, Volume2, Target, RotateCcw } from 'lucide-react';
+import { migrateLocalDataToCloud } from '../utils/migrate';
+import { useAuth } from '../context/AuthContext';
+import { Moon, Sun, Volume2, Target, RotateCcw, CloudUpload, LogOut } from 'lucide-react';
 
 export default function Settings() {
     const [theme, setTheme] = useState('light');
@@ -8,6 +10,9 @@ export default function Settings() {
     const [dailyGoal, setDailyGoal] = useState(15);
     const [apiKey, setApiKey] = useState('');
     const [saving, setSaving] = useState(false);
+    const [migrating, setMigrating] = useState(false);
+    const [keySaved, setKeySaved] = useState(false);
+    const { signOut, user } = useAuth();
 
     useEffect(() => {
         const loadSettings = async () => {
@@ -47,6 +52,25 @@ export default function Settings() {
         if (window.confirm("Deseja mesmo redefinir TODAS as estatísticas e histórico do app? (Os cards e anotações NÃO serão apagados)")) {
             // In a real scenario, truncate specific tables like stats / reviews history
             alert("Apenas representativo (Não implementado). Para apagar de verdade, vá no DevTools > Application > IndexedDB.");
+        }
+    };
+
+    const handleMigration = async () => {
+        if (!user) {
+            alert("Você precisa estar logado para migrar seus dados.");
+            return;
+        }
+        
+        if (window.confirm("Isso vai enviar todos os cards e anotações salvos offline para a sua nova conta na nuvem. Continuar?")) {
+            setMigrating(true);
+            const result = await migrateLocalDataToCloud();
+            setMigrating(false);
+
+            if (result.success) {
+                alert(`Migração concluída! Foram movidos:\n- ${result.cards} cards\n- ${result.notes} anotações`);
+            } else {
+                alert(`Erro na migração: ${result.error}`);
+            }
         }
     };
 
@@ -125,10 +149,37 @@ export default function Settings() {
                         className="input-field"
                         placeholder="Cole sua API Key aqui..."
                         value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
+                        onChange={(e) => {
+                            setApiKey(e.target.value);
+                            setKeySaved(false);
+                        }}
                     />
-                    <button className="btn btn-secondary mt-2" onClick={() => handleSave('gemini_api_key', apiKey)}>
-                        Salvar Chave
+                    <button 
+                        className={`btn mt-2 ${keySaved ? 'btn-primary' : 'btn-secondary'}`} 
+                        onClick={() => {
+                            handleSave('gemini_api_key', apiKey);
+                            setKeySaved(true);
+                            setTimeout(() => setKeySaved(false), 2000);
+                        }}
+                    >
+                        {keySaved ? 'Chave Salva com Sucesso! ✨' : 'Salvar Chave'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="card mt-4">
+                <h3 className="flex-center mb-4" style={{ justifyContent: 'flex-start', gap: '0.5rem', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                    <CloudUpload size={18} /> Sincronização em Nuvem
+                </h3>
+                <p className="text-secondary text-sm mb-4">
+                    Logado como: <strong>{user?.email}</strong>
+                </p>
+                <div className="flex-col gap-3">
+                    <button className="btn btn-secondary w-full" onClick={handleMigration} disabled={migrating} style={{ justifyContent: 'center' }}>
+                        <CloudUpload size={18} /> {migrating ? 'Migrando...' : 'Migrar Dados Antigos (Offline → Nuvem)'}
+                    </button>
+                    <button className="btn w-full" onClick={signOut} style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                        <LogOut size={18} /> Sair da Conta
                     </button>
                 </div>
             </div>

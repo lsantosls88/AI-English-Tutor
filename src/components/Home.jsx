@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { getCardsToReview, getStatsForToday, getSetting, db } from '../db';
+import { getCardsToReview, getStatsForToday, getSetting, getAllCards } from '../db';
 import { PlayCircle, PlusCircle, PenTool, Flame, Target, Star, Compass, Hash } from 'lucide-react';
 
 export default function Home() {
@@ -10,26 +9,36 @@ export default function Home() {
     const [dailyGoal, setDailyGoal] = useState(15);
     const [onboarded, setOnboarded] = useState(true);
 
-    // Check if onboarded
+    const [itemsToReview, setItemsToReview] = useState([]);
+    const [totalCards, setTotalCards] = useState(0);
+
+    // Check if onboarded and load stats
     useEffect(() => {
         const init = async () => {
-            const isReady = await getSetting('onboarded', false);
-            if (!isReady) navigate('/onboarding');
+            try {
+                const isReady = await getSetting('onboarded', false);
+                if (!isReady) navigate('/onboarding');
 
-            const s = await getStatsForToday();
-            setStats(s);
+                const s = await getStatsForToday();
+                if (s) setStats(s);
 
-            const goal = await getSetting('daily_goal', 15);
-            setDailyGoal(goal);
+                const goal = await getSetting('daily_goal', 15);
+                setDailyGoal(goal);
+
+                // Load cards info
+                const reviewCards = await getCardsToReview();
+                setItemsToReview(reviewCards);
+
+                // Quick trick to get total cards without loading all: Supabase provides count, 
+                // but db.js exports getAllCards for now. We can just use its length for small scale.
+                const all = await getAllCards();
+                setTotalCards(all.length);
+            } catch (error) {
+                console.error("Home loading error:", error);
+            }
         };
         init();
     }, [navigate]);
-
-    // Live query to get pending review count
-    const itemsToReview = useLiveQuery(() => getCardsToReview(), []) || [];
-
-    // Total cards
-    const totalCards = useLiveQuery(() => db.cards.count(), []) || 0;
 
     const goalMet = stats.reviews >= dailyGoal;
     const noPending = itemsToReview.length === 0;

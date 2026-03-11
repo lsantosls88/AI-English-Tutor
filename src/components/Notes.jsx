@@ -1,53 +1,93 @@
-import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { useState, useEffect } from 'react';
+import { supabase } from '../utils/supabase';
+import { getCurrentUserId } from '../db';
 import { Plus, Trash2, PenTool } from 'lucide-react';
 
 export default function Notes() {
     const [activeNote, setActiveNote] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [notes, setNotes] = useState([]);
 
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [tags, setTags] = useState('');
 
-    const notes = useLiveQuery(() => db.notes.toArray(), []) || [];
+    useEffect(() => {
+        const fetchNotes = async () => {
+            const user_id = await getCurrentUserId();
+            if (!user_id) return;
+
+            const { data, error } = await supabase
+                .from('notes')
+                .select('*')
+                .eq('user_id', user_id)
+                .order('updated_at', { ascending: false });
+
+            if (!error && data) {
+                setNotes(data);
+            }
+        };
+        fetchNotes();
+    }, []);
 
     const handleCreate = async () => {
-        const id = await db.notes.add({
+        const user_id = await getCurrentUserId();
+        if (!user_id) return;
+
+        const newNote = {
+            user_id,
             title: 'Nova Anotação',
             content: '',
             tags: [],
             updated_at: Date.now()
-        });
+        };
 
-        // Switch to new note
-        setActiveNote({ id, title: 'Nova Anotação', content: '', tags: [] });
-        setTitle('Nova Anotação');
-        setContent('');
-        setTags('');
-        setIsEditing(true);
+        const { data, error } = await supabase.from('notes').insert(newNote).select().single();
+
+        if (!error && data) {
+            setNotes([data, ...notes]);
+            setActiveNote(data);
+            setTitle(data.title);
+            setContent(data.content);
+            setTags('');
+            setIsEditing(true);
+        }
     };
 
     const handleSave = async () => {
         if (!activeNote) return;
 
-        await db.notes.update(activeNote.id, {
+        const updatedNote = {
             title,
             content,
             tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
             updated_at: Date.now()
-        });
-        setIsEditing(false);
+        };
+
+        const { data, error } = await supabase
+            .from('notes')
+            .update(updatedNote)
+            .eq('id', activeNote.id)
+            .select()
+            .single();
+
+        if (!error && data) {
+            setNotes(notes.map(n => n.id === activeNote.id ? data : n));
+            setActiveNote(data);
+            setIsEditing(false);
+        }
     };
 
     const handleDelete = async (id, e) => {
         e.stopPropagation();
         if (window.confirm("Apagar esta anotação?")) {
-            await db.notes.delete(id);
-            if (activeNote && activeNote.id === id) {
-                setActiveNote(null);
-                setIsEditing(false);
+            const { error } = await supabase.from('notes').delete().eq('id', id);
+            if (!error) {
+                setNotes(notes.filter(n => n.id !== id));
+                if (activeNote && activeNote.id === id) {
+                    setActiveNote(null);
+                    setIsEditing(false);
+                }
             }
         }
     };

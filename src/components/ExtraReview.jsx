@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { db, updateStats, getSetting } from '../db';
+import { getAllCards, updateStats, getSetting } from '../db';
 import { speak, speakLearningMode, startListening, comparePronunciation } from '../utils/speech';
 import { Volume2, Mic, ArrowLeft, RotateCcw, Frown, Meh, Smile, Target, Snail, Zap, RefreshCw, BookOpen, Flame, Compass, Hash } from 'lucide-react';
 
@@ -33,31 +33,36 @@ export default function ExtraReview() {
 
         const loadData = async () => {
             setLoading(true);
-            let allCards = await db.cards.toArray();
-            let filteredCards = [];
+            try {
+                let allCards = await getAllCards();
+                let filteredCards = [];
 
-            if (mode === 'hard') {
-                // Cards with high failure rate (low ease factor) or frequently reviewed
-                filteredCards = allCards.filter(c => c.ease_factor < 2.5).sort((a, b) => a.ease_factor - b.ease_factor);
-                if (filteredCards.length === 0) {
-                    // Fallback to recent cards if they don't have hard ones
-                    filteredCards = allCards.sort((a, b) => b.created_at - a.created_at).slice(0, 20);
+                if (mode === 'hard') {
+                    // Cards with high failure rate (low ease factor) or frequently reviewed
+                    filteredCards = allCards.filter(c => c.ease_factor < 2.5).sort((a, b) => a.ease_factor - b.ease_factor);
+                    if (filteredCards.length === 0) {
+                        // Fallback to recent cards if they don't have hard ones
+                        filteredCards = allCards.sort((a, b) => b.created_at - a.created_at).slice(0, 20);
+                    }
+                } else if (mode === 'filter') {
+                    filteredCards = allCards.filter(c => {
+                        const matchType = filterType === 'All' || c.type === filterType;
+                        const matchTag = filterTags === '' || (c.tags && c.tags.some(tag => tag.toLowerCase().includes(filterTags.toLowerCase())));
+                        return matchType && matchTag;
+                    });
+                } else {
+                    // 'all' - shuffle all cards (limit to ~30 for a session)
+                    filteredCards = allCards.sort(() => 0.5 - Math.random()).slice(0, 30);
                 }
-            } else if (mode === 'filter') {
-                filteredCards = allCards.filter(c => {
-                    const matchType = filterType === 'All' || c.type === filterType;
-                    const matchTag = filterTags === '' || (c.tags && c.tags.toLowerCase().includes(filterTags.toLowerCase()));
-                    return matchType && matchTag;
-                });
-            } else {
-                // 'all' - shuffle all cards (limit to ~30 for a session)
-                filteredCards = allCards.sort(() => 0.5 - Math.random()).slice(0, 30);
-            }
 
-            setCards(filteredCards);
-            const prefAccent = await getSetting('accent', 'US');
-            setAccent(prefAccent);
-            setLoading(false);
+                setCards(filteredCards);
+                const prefAccent = await getSetting('accent', 'US');
+                setAccent(prefAccent);
+            } catch (err) {
+                console.error("Error loading extra review cards:", err);
+            } finally {
+                setLoading(false);
+            }
         };
         loadData();
     }, [mode, filterReady, filterTags, filterType]);
