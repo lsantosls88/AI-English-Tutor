@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCardsToReview, getStatsForToday, getSetting, getAllCards } from '../db';
-import { PlayCircle, PlusCircle, PenTool, Flame, Target, Star, Compass, Hash } from 'lucide-react';
+import { getCardsToReview, getStatsForToday, getSetting, getAllCards, addDailyCards } from '../db';
+import { PlayCircle, PlusCircle, PenTool, Flame, Target, Star, Compass, Hash, Sparkles, Settings as SettingsIcon } from 'lucide-react';
 
 export default function Home() {
     const navigate = useNavigate();
@@ -11,6 +11,8 @@ export default function Home() {
 
     const [itemsToReview, setItemsToReview] = useState([]);
     const [totalCards, setTotalCards] = useState(0);
+    const [dailyNewCards, setDailyNewCards] = useState(null);
+    const [showNoKeyHint, setShowNoKeyHint] = useState(false);
 
     // Check if onboarded and load stats
     useEffect(() => {
@@ -33,6 +35,26 @@ export default function Home() {
                 // but db.js exports getAllCards for now. We can just use its length for small scale.
                 const all = await getAllCards();
                 setTotalCards(all.length);
+
+                // Try to generate daily cards
+                try {
+                    const apiKey = await getSetting('gemini_api_key', '');
+                    if (!apiKey) {
+                        setShowNoKeyHint(true);
+                    } else {
+                        const generated = await addDailyCards();
+                        if (generated && generated.length > 0) {
+                            setDailyNewCards(generated);
+                            // Refresh counts after adding new cards
+                            const updatedReview = await getCardsToReview();
+                            setItemsToReview(updatedReview);
+                            const updatedAll = await getAllCards();
+                            setTotalCards(updatedAll.length);
+                        }
+                    }
+                } catch (dailyErr) {
+                    console.error("Daily generation error:", dailyErr);
+                }
             } catch (error) {
                 console.error("Home loading error:", error);
             }
@@ -57,6 +79,34 @@ export default function Home() {
                     <span style={{ fontWeight: 'bold' }}>{stats.streak_active ? '1 Dia' : '0 Dias'}</span>
                 </div>
             </div>
+
+            {/* Daily New Cards Banner */}
+            {dailyNewCards && dailyNewCards.length > 0 && (
+                <div className="card mb-6" style={{ border: '1px solid var(--accent-light)', background: 'linear-gradient(135deg, var(--accent-light), var(--bg-secondary))' }}>
+                    <div className="flex-center gap-2 mb-3">
+                        <Sparkles size={20} color="var(--accent-primary)" />
+                        <span style={{ fontWeight: '700', color: 'var(--accent-primary)' }}>
+                            {dailyNewCards.length} novos cards adicionados hoje!
+                        </span>
+                    </div>
+                    <div className="flex-col gap-2">
+                        {dailyNewCards.map((card, i) => (
+                            <div key={i} style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}>
+                                <strong>{card.english}</strong>
+                                <span className="text-secondary"> — {card.translation}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Hint to configure API key */}
+            {showNoKeyHint && !dailyNewCards && (
+                <Link to="/settings" className="card mb-6 flex-center gap-2" style={{ border: '1px dashed var(--border-color)', textAlign: 'center', padding: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+                    <SettingsIcon size={16} />
+                    Configure sua chave de IA nas Configurações para receber conteúdo novo todo dia ✨
+                </Link>
+            )}
 
             {/* Stats Summary */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>

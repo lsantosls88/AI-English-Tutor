@@ -1,4 +1,5 @@
 import { supabase } from './utils/supabase';
+import { generateDailyCards } from './utils/ai';
 
 // Helper to get the current user ID
 export const getCurrentUserId = async () => {
@@ -174,4 +175,56 @@ export const saveSetting = async (key, value) => {
 
     if (error) throw error;
     return data;
+};
+
+// --- AUTO DAILY CONTENT ---
+
+/**
+ * Checks if daily cards have already been generated today. If not, generates 3 new cards via AI.
+ * Returns the newly created cards, or null if skipped/failed.
+ */
+export const addDailyCards = async () => {
+    const user_id = await getCurrentUserId();
+    if (!user_id) return null;
+
+    // Check if we already generated today
+    const today = new Date().toISOString().split('T')[0];
+    const lastGenDate = await getSetting('last_auto_generate_date', '');
+
+    if (lastGenDate === today) {
+        return null; // Already generated today
+    }
+
+    // Get user preferences
+    const level = await getSetting('level', 'beginner');
+    const goal = await getSetting('goal', 'general');
+
+    // Get existing words to avoid duplicates
+    const allCards = await getAllCards();
+    const existingWords = allCards.map(c => c.english);
+
+    // Call the AI
+    const newCards = await generateDailyCards(level, goal, existingWords);
+
+    if (!newCards || newCards.length === 0) {
+        return null; // AI not configured or failed
+    }
+
+    // Save each card
+    const savedCards = [];
+    for (const card of newCards) {
+        try {
+            const saved = await addCard(card);
+            savedCards.push(saved);
+        } catch (err) {
+            console.error("Error saving daily card:", err);
+        }
+    }
+
+    // Mark today as done
+    if (savedCards.length > 0) {
+        await saveSetting('last_auto_generate_date', today);
+    }
+
+    return savedCards;
 };
