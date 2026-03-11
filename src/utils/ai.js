@@ -76,19 +76,22 @@ export const generateDailyLesson = async (level, goal, existingWords = []) => {
 
     const avoidList = existingWords.slice(0, 100).join(', ');
 
-    const prompt = `Você é um professor de inglês experiente, focado em ensinar brasileiros. Sua tarefa é gerar uma pequena "Aula Diária" contendo 3 novos termos em inglês (podem ser palavras úteis, phrasal verbs ou expressões idiomáticas) adequados para um aluno de nível ${levelDescription} com foco em ${goalDescription}.
+    const prompt = `Você é um professor de inglês nativo e experiente, focado em ensinar brasileiros. Sua tarefa é gerar um "Treino Diário" contendo 3 novos termos em inglês adequados para um aluno de nível ${levelDescription} com foco em ${goalDescription}.
 
 Regras para a geração:
 1. Os termos devem ser práticos e muito usados no dia a dia por nativos.
-2. A explicação deve ser curta, direta e em português, focando em *quando* e *como* usar a expressão no mundo real.
-3. Forneça exatamente 2 exemplos de uso em frases completas para cada termo.
-4. O texto em inglês ("termo_ingles" e "frase_ingles") deve estar limpo, sem caracteres especiais desnecessários, pois será lido por um sistema de Text-to-Speech (TTS).
-5. NÃO use nenhum destes termos que o aluno já conhece: [${avoidList}]
+2. A explicação geral deve ser curta, direta e em português.
+3. Forneça 2 exemplos práticos para cada termo.
+4. PARA CADA EXEMPLO, forneça:
+   - Uma explicação gramatical curta ("estrutura"): por que a frase foi montada assim?
+   - Uma dica de pronúncia nativa ("dica_pronuncia"): explique fenômenos como Connected Speech (juntar palavras), Flap T (T com som de R), engolir letras, etc.
+5. O texto em inglês ("termo_ingles" e "frase_ingles") deve estar limpo, sem caracteres especiais, pois será lido por um sistema de Text-to-Speech (TTS).
+6. NÃO use nenhum destes termos que o aluno já conhece: [${avoidList}]
 
-Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, seguindo estritamente esta estrutura:
+Retorne APENAS um objeto JSON válido, seguindo estritamente esta estrutura:
 
 {
-  "aula_diaria": [
+  "treino_diario": [
     {
       "termo_ingles": "String",
       "traducao_ptbr": "String",
@@ -96,11 +99,15 @@ Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, seguind
       "exemplos": [
         {
           "frase_ingles": "String",
-          "traducao_frase": "String"
+          "traducao_frase": "String",
+          "estrutura": "String (Explicando a gramática da frase)",
+          "dica_pronuncia": "String (Dicas práticas de como um nativo falaria isso rápido)"
         },
         {
           "frase_ingles": "String",
-          "traducao_frase": "String"
+          "traducao_frase": "String",
+          "estrutura": "String",
+          "dica_pronuncia": "String"
         }
       ]
     }
@@ -119,7 +126,7 @@ Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, seguind
 
         const parsed = JSON.parse(response.text);
 
-        if (!parsed.aula_diaria || !Array.isArray(parsed.aula_diaria) || parsed.aula_diaria.length === 0) {
+        if (!parsed.treino_diario || !Array.isArray(parsed.treino_diario) || parsed.treino_diario.length === 0) {
             throw new Error("Resposta inválida da IA");
         }
 
