@@ -342,12 +342,51 @@ export default function DailyPractice() {
                                                 )}
                                                 {ex.dica_pronuncia && (
                                                     <div>
-                                                        <p style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--warning)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                            🗣️ Dica de Pronúncia Nativa
-                                                        </p>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                            <p style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--warning)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                                🗣️ Dica de Pronúncia Nativa
+                                                            </p>
+                                                            {ex.fragmento_audio_pronuncia && (
+                                                                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                                                                    <button
+                                                                        onClick={() => handleSpeak(ex.fragmento_audio_pronuncia, `pron-${i}`)}
+                                                                        title={`Ouvir: "${ex.fragmento_audio_pronuncia}"`}
+                                                                        style={{
+                                                                            background: speakingId === `pron-${i}` ? 'var(--warning)' : 'var(--bg-secondary)',
+                                                                            color: speakingId === `pron-${i}` ? 'white' : 'var(--warning)',
+                                                                            border: 'none', borderRadius: 'var(--radius-full)',
+                                                                            width: '30px', height: '30px', padding: 0,
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                            cursor: 'pointer', transition: 'all 0.2s ease'
+                                                                        }}
+                                                                    >
+                                                                        <Volume2 size={14} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleSpeak(ex.fragmento_audio_pronuncia, `pron-${i}-slow`, 'slow')}
+                                                                        title={`Ouvir devagar: "${ex.fragmento_audio_pronuncia}"`}
+                                                                        style={{
+                                                                            background: speakingId === `pron-${i}-slow` ? 'var(--warning)' : 'var(--bg-secondary)',
+                                                                            color: speakingId === `pron-${i}-slow` ? 'white' : 'var(--text-tertiary)',
+                                                                            border: 'none', borderRadius: 'var(--radius-full)',
+                                                                            width: '26px', height: '26px', padding: 0, fontSize: '0.7rem',
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                            cursor: 'pointer', transition: 'all 0.2s ease'
+                                                                        }}
+                                                                    >
+                                                                        🐢
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                         <p style={{ fontSize: '0.85rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
                                                             {ex.dica_pronuncia}
                                                         </p>
+                                                        {ex.fragmento_audio_pronuncia && (
+                                                            <p style={{ fontSize: '0.8rem', color: 'var(--warning)', fontWeight: '600', marginTop: '0.35rem', fontStyle: 'italic' }}>
+                                                                🔊 "{ex.fragmento_audio_pronuncia}"
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

@@ -84,7 +84,8 @@ Regras para a geração:
 3. Forneça 2 exemplos práticos para cada termo.
 4. PARA CADA EXEMPLO, forneça:
    - Uma explicação gramatical curta ("estrutura"): por que a frase foi montada assim?
-   - Uma dica de pronúncia nativa ("dica_pronuncia"): explique fenômenos como Connected Speech (juntar palavras), Flap T (T com som de R), engolir letras, etc.
+   - Uma dica de pronúncia nativa ("dica_pronuncia"): explique em português fenômenos como Connected Speech (juntar palavras), Flap T, ou reduções.
+   - O fragmento do áudio ("fragmento_audio_pronuncia"): escreva APENAS as exatas palavras em inglês que sofrem a alteração de pronúncia explicada na dica (ex: se a dica fala sobre juntar 'want to', escreva apenas 'want to' ou 'wanna' aqui). Isso servirá para o sistema de áudio ler apenas essa parte com sotaque nativo.
 5. O texto em inglês ("termo_ingles" e "frase_ingles") deve estar limpo, sem caracteres especiais, pois será lido por um sistema de Text-to-Speech (TTS).
 6. NÃO use nenhum destes termos que o aluno já conhece: [${avoidList}]
 
@@ -100,14 +101,16 @@ Retorne APENAS um objeto JSON válido, seguindo estritamente esta estrutura:
         {
           "frase_ingles": "String",
           "traducao_frase": "String",
-          "estrutura": "String (Explicando a gramática da frase)",
-          "dica_pronuncia": "String (Dicas práticas de como um nativo falaria isso rápido)"
+          "estrutura": "String",
+          "dica_pronuncia": "String (Explicação em PT-BR)",
+          "fragmento_audio_pronuncia": "String (Apenas o trecho em inglês para o áudio)"
         },
         {
           "frase_ingles": "String",
           "traducao_frase": "String",
           "estrutura": "String",
-          "dica_pronuncia": "String"
+          "dica_pronuncia": "String",
+          "fragmento_audio_pronuncia": "String"
         }
       ]
     }
